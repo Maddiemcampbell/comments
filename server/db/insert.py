@@ -9,7 +9,7 @@ with open('/Users/maddie/repos/portfolio-projects/bobyard-project/bobyard/commen
     data = json.load(f)['comments']
 
 
-# Should use .env when I have time to fix this
+# Should use .env, I ran this before setting up global variaables
 db_params = {
     'host': '',
     'port': '',
