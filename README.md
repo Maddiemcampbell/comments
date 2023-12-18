@@ -53,5 +53,6 @@ python3 ./db/insert.py
 ## FUTURE IMPROVEMENTS I WOULD MAKE:
 - .env file for frontend
 - Better UX for frontend "edit" feature, possibly a modal experience styled with Material
+- clean up Create React App boilerplate
 - Ability to login as a user and like + post comments (not just as an admin)
 - Filter comments by most recent (potentially other filter options as well, like most relevant)
