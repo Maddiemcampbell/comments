@@ -21,7 +21,7 @@ DB_PORT=
 
 ### Virtual Environment
 ```
-python3.9 -m virtualenv myenv
+python3.9.5 -m virtualenv myenv
 source myenv/bin/activate
 ```
 
