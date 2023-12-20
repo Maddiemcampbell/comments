@@ -8,12 +8,13 @@ from .serializers import CommentSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+import sys
 
 @csrf_exempt
 @api_view(['PUT'])
 def edit_comment(request, comment_id, format=None):
     try:
-        comment = Comment.objects.get(dbid=comment_id)
+        comment = Comment.objects.get(id=comment_id)
     except Comment.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Comment not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -39,7 +40,7 @@ def add_comment(request, format=None):
             author = 'Admin'
             likes = 0
 
-            new_comment = Comment(author=author, text=new_text, date=timezone.now(), image=new_image, likes=likes)
+            new_comment = Comment(author=author, text=new_text, date=timezone.now(), image=new_image, likes=likes, parent='')
             new_comment.save()
 
             return Response({'Success': 'Comment added successfully.'}, status=status.HTTP_201_CREATED)
@@ -52,7 +53,7 @@ def add_comment(request, format=None):
 def delete_comment(request, comment_id):
     if request.method == 'DELETE':
         try:
-            comment = Comment.objects.get(dbid=comment_id)
+            comment = Comment.objects.get(id=comment_id)
             comment.delete()
             return JsonResponse({'status': 'success'})
         except Comment.DoesNotExist:
@@ -60,9 +61,22 @@ def delete_comment(request, comment_id):
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+@api_view(['GET'])
 def list_comments(request):
-    comments = Comment.objects.all()
-    comment_list = [{'id': comment.dbid, 'author': comment.author, 'text': comment.text,
-                     'date': comment.date.strftime('%Y-%m-%dT%H:%M:%SZ'), 'likes': comment.likes,
-                     'image': comment.image} for comment in comments]
-    return JsonResponse({'comments': comment_list})
+    queryset = Comment.objects.filter(parent='')
+    comments_data = list(queryset.values())
+    print("Comments Data (Before Serialization):", comments_data)
+    comments = Comment.objects.filter(parent='')
+    serializer = CommentSerializer(comments, many=True)
+    return Response({'comments': serializer.data})
+
+@api_view(['GET'])
+def list_replies(request, parent_id):
+    try:
+        parent_comment = Comment.objects.get(id=parent_id)
+    except Comment.DoesNotExist:
+        return Response({'error': 'Parent comment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    replies = Comment.objects.filter(parent=parent_id)
+    serializer = CommentSerializer(replies, many=True)
+    return Response({'replies': serializer.data})

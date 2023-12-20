@@ -1,3 +1,10 @@
+### List replies
+In view.py The `list_comments` view fetches top-level comments from the database, prints their raw data before serialization, and returns a JSON response containing the serialized comments. The `list_replies` view attempts to retrieve a parent comment based on the provided ID, returns an error if not found, fetches and serializes its replies, and responds with a JSON containing the serialized replies. Both views are designed to provide structured data for frontend consumption, with the former offering additional insights into raw comment data during development.
+
+On the client side, in App.js, the function renderCommentsRecursively handles the recursive rendering of comments and their replies by calling `list_comments` and `list_replies`
+
+I still need to implement the ability to add a reply to a comment
+
 ### FRONTEND
 ``` 
 cd client
@@ -56,3 +63,4 @@ python3 ./db/insert.py
 - clean up Create React App boilerplate
 - Ability to login as a user and like + post comments (not just as an admin)
 - Filter comments by most recent (potentially other filter options as well, like most relevant)
+

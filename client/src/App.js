@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import TextField from '@mui/material/TextField';
@@ -7,32 +6,31 @@ import Box from '@mui/material/Box';
 import Comment from './components/Comment';
 
 const App = () => {
-  const [comments, setComments] = useState([]);
   const [newText, setNewText] = useState('');
   const [newImage, setNewImage] = useState('');
+  const [sortedComments, setSortedComments] = useState([]);
+  const [filter, setFilter] = useState('recent');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchComments();
-  }, []);
-  //  set api to use .env on frontend
-  const fetchComments = async () => {
-    try {
-      const response = await axios.get('http://localhost:8000/list_comments/');
-      
-      // Ensure the response status is okay (2xx)
-      if (response.status >= 200 && response.status < 300) {
-        const responseData = await response.data;
-        setComments(responseData.comments);
-      } else {
-        console.error('Error fetching comments. Server returned an error:', response.status);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
+  const renderCommentsRecursively = (comments, parentId) => {
+    return comments.map(comment => (
+      <Comment
+        key={comment.id}
+        comment={comment}
+        onEdit={handleEditComment}
+        onDelete={handleDeleteComment}
+      >
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="comment-replies">
+            {renderCommentsRecursively(comment.replies, comment.id)}
+          </div>
+        )}
+      </Comment>
+    ));
   };
 
   const handleEditComment = async (id) => {
-    const newComments = [...comments];
+    const newComments = [...sortedComments];
     const commentIndex = newComments.findIndex((comment) => comment.id === id);
     const updatedText = prompt('Enter the new text:', newComments[commentIndex].text);
     
@@ -42,7 +40,7 @@ const App = () => {
           text: updatedText,  // Align with the expected field name 'text'
         });
         newComments[commentIndex].text = updatedText;
-        setComments(newComments);
+        setSortedComments(newComments);
       } catch (error) {
         console.error('Error editing comment:', error);
       }
@@ -61,7 +59,7 @@ const App = () => {
         image: newImage,
         author: 'Admin'
       });
-      fetchComments();
+      fetchCommentsData();
     } catch (error) {
       console.error('Error adding comment:', error);
     }
@@ -72,55 +70,88 @@ const App = () => {
     if (shouldDelete) {
       try {
         await axios.delete(`http://localhost:8000/delete_comment/${id}/`);
-        fetchComments();
+        fetchCommentsData();
       } catch (error) {
         console.error('Error deleting comment:', error);
       }
     }
   };
 
+  const sortComments = (commentsArray) => {
+    return commentsArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  };
+
+  const fetchCommentsData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:8000/list_comments/');
+      console.log("API Response:", response); 
+      if (response.status >= 200 && response.status < 300) {
+        const responseData = await response.data;
+        const commentsArray = Array.isArray(responseData.comments) ? responseData.comments : [];
+        const sortedComments = sortComments(commentsArray);
+        setSortedComments(sortedComments);
+        console.log("sorted comments:", sortedComments);
+      } else {
+        console.error('Error fetching comments. Server returned an error:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchCommentsData();
+  }, []); 
+
   return (
     <div>
       <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      p={2}
-      border={1}
-      borderRadius={8}
-      borderColor="grey.300"
-      maxWidth={700}
-      margin="20px auto"
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        p={2}
+        border={1}
+        borderRadius={8}
+        borderColor="grey.300"
+        maxWidth={700}
+        margin="20px auto"
       >
-          <h3>Add New Comment</h3>
-          <TextField
-            label="Comment"
-            variant="outlined"
-            fullWidth
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-          />
-          <TextField
-            label="Image URL"
-            variant="outlined"
-            fullWidth
-            value={newImage}
-            onChange={(e) => setNewImage(e.target.value)}
-          />
+        <h3>Add New Comment</h3>
+        <TextField
+          label="Comment"
+          variant="outlined"
+          fullWidth
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+        />
+        <TextField
+          label="Image URL"
+          variant="outlined"
+          fullWidth
+          value={newImage}
+          onChange={(e) => setNewImage(e.target.value)}
+        />
         <Button type="submit" variant="contained" color="primary" onClick={handleAddComment}>
           Add Comment
         </Button>
       </Box>
+      <Box marginTop={2}>
+        <label>Filter Comments:</label>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="recent">Most Recent</option>
+          <option value="liked">Most Liked</option>
+        </select>
+      </Box>
       <div className="comments-container">
-        {comments.map(comment => (
-          <Comment
-          key={comment.id}
-          comment={comment}
-          onEdit={handleEditComment}
-          onDelete={handleDeleteComment}
-          />
-        ))}
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          renderCommentsRecursively(sortedComments)
+        )}
       </div>
     </div>
   );

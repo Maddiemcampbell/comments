@@ -8,6 +8,7 @@ class CommentSerializer(serializers.ModelSerializer):
     text = serializers.CharField(style={'base_template': 'textarea.html'})
     likes = serializers.IntegerField(required=False)
     image = serializers.URLField(allow_blank=True, max_length=200, required=False)
+    parent = serializers.CharField(max_length=255)
     class Meta:
         model = Comment
-        fields = ['id', 'author', 'text', 'date', 'likes', 'image']
+        fields = ['id', 'author', 'text', 'date', 'likes', 'image', 'parent']
